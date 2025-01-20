@@ -102,15 +102,15 @@
 
     <!-- Initial Menu -->
     <label for="test-selection">Select a Test:</label>
-    <button id="test selection" onchannge="showSubcategories()" onclick="alert ('Welcome to pH-testing website')"> == $0
-        <button value="">--Select--</button>
-        <button value="health">Health</button>
-        <button value="hygiene">Hygiene</button>
-        <button value="food">Food Items</button>
-        <button value="household">Household Utilities</button>
-        <button value="water">Water Quality</button>
-        <button value="soil">Soil</button>
-        <button value="ph-testing">pH Testing</button>
+    <select id="test selection" onchannge="showSubcategories()" 
+        <option value="">--Select--</option>
+        <option value="health">Health</option>
+        <option value="hygiene">Hygiene</option>
+        <option value="food">Food Items</option>
+        <option value="household">Household Utilities</option>
+        <option value="water">Water Quality</option>
+        <option value="soil">Soil</option>
+        <option value="ph-testing">pH Testing</option>
     </select>
     
     <!-- Second Menu -->
