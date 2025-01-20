@@ -100,9 +100,9 @@
     <div class="decorative-element" style="top: 50%; left: 80%; width: 150px; height: 150px;"></div>
     <div class="decorative-element" style="bottom: 10%; right: 10%; width: 200px; height: 200px;"></div>
 
-    <!-- Initial Menu -->
+   <!-- Initial Menu -->
     <label for="test-selection">Select a Test:</label>
-    <select id="test selection" onchannge="showSubcategories()" 
+    <select id="test-selection" onchange="showSubcategories()">
         <option value="">--Select--</option>
         <option value="health">Health</option>
         <option value="hygiene">Hygiene</option>
@@ -112,6 +112,7 @@
         <option value="soil">Soil</option>
         <option value="ph-testing">pH Testing</option>
     </select>
+
     
     <!-- Second Menu -->
     <div id="subcategory-menu">
