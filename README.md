@@ -427,45 +427,70 @@
       reader.readAsDataURL(file);
     }
 
-    function downloadResults() {
+ function downloadResults() {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  // Define page width and margins
+  // Create a new PDF document.
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+  
+  // Get dimensions.
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
 
-  // --- Header Section ---
-  // Draw a filled rectangle for the header background.
-  doc.setFillColor(0, 123, 255); // Choose a blue (RGB: 0,123,255) for the header.
-  doc.rect(0, 0, pageWidth, 30, 'F');
+  // *** Add a Watermark ***
+  // Set a semi-transparent, rotated text "CONFIDENTIAL" in the background.
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(50);
+  doc.setTextColor(200, 200, 200); // light gray
+  // The 'angle' option is not built-in to jsPDF 2.x, so use doc.text() with transformation.
+  doc.saveGraphicsState();
+  doc.translate(pageWidth / 2, pageHeight / 2);
+  doc.rotate(45);
+  doc.text("Temporary result", 0, 0, { align: 'center' });
+  doc.restoreGraphicsState();
+
+  // *** Header Section ***
+  // Draw a colored rectangle as the header background.
+  doc.setFillColor(0, 123, 255); // blue
+  doc.rect(0, 0, pageWidth, 30, 'F'); // fill the top portion
   
-  // Header title
+  // Add header title.
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
-  doc.setTextColor(255, 255, 255); // white text for header
+  doc.setTextColor(255, 255, 255); // white text in header
   doc.text("pH Test Report", pageWidth / 2, 20, { align: 'center' });
   
-  // --- Divider ---
+  // Draw a decorative line below header.
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.5);
-  doc.line(margin, 35, pageWidth - margin, 35);
+  doc.line(margin, 33, pageWidth - margin, 33);
   
-  // --- Body Section ---
-  // Reset font and color for the content
+  // *** Body Section ***
   doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
-
-  // Get the detailed result text from the page and split it into lines that fit the page.
+  
+  // Get detailed result text from the page.
   const resultText = document.getElementById("result-text").innerText;
+  // Split into lines that fit inside the page.
   const textLines = doc.splitTextToSize(resultText, pageWidth - 2 * margin);
   doc.text(textLines, margin, 45);
   
-  // --- Footer Section ---
+  // *** Footer Section ***
+  // Draw a decorative border.
+  doc.setDrawColor(0, 123, 255);
+  doc.setLineWidth(2);
+  doc.rect(5, 5, pageWidth - 10, pageHeight - 10); // draws a border around the page
+  
+  // Add footer text (e.g., tagline or disclaimer).
+  doc.setFont("helvetica", "italic");
   doc.setFontSize(10);
   doc.setTextColor(100);
-  doc.text("Disclaimer: This report does not replace professional advice.", pageWidth / 2, 285, { align: 'center' });
+  doc.text("Thank you for using our pH testing service", pageWidth / 2, pageHeight - 10, { align: 'center' });
   
   // Save the PDF with a descriptive filename.
   doc.save("pH_Test_Results.pdf");
