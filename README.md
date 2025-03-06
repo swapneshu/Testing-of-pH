@@ -427,72 +427,77 @@
       reader.readAsDataURL(file);
     }
 
- function downloadResults() {
+function downloadResults() {
+  // Log that the function has been triggered.
+  console.log("downloadResults() function called.");
+  
+  // Check if the jsPDF object is available.
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    console.error("jsPDF library is not loaded.");
+    alert("Error: jsPDF library is not loaded. Please check your CDN link.");
+    return;
+  }
+  
+  // Create a new jsPDF instance.
   const { jsPDF } = window.jspdf;
-  // Create a new PDF document.
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4'
   });
   
-  // Get dimensions.
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
-
-  // *** Add a Watermark ***
-  // Set a semi-transparent, rotated text "CONFIDENTIAL" in the background.
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(50);
-  doc.setTextColor(200, 200, 200); // light gray
-  // The 'angle' option is not built-in to jsPDF 2.x, so use doc.text() with transformation.
-  doc.saveGraphicsState();
-  doc.translate(pageWidth / 2, pageHeight / 2);
-  doc.rotate(45);
-  doc.text("Temporary result", 0, 0, { align: 'center' });
-  doc.restoreGraphicsState();
-
-  // *** Header Section ***
-  // Draw a colored rectangle as the header background.
-  doc.setFillColor(0, 123, 255); // blue
-  doc.rect(0, 0, pageWidth, 30, 'F'); // fill the top portion
   
-  // Add header title.
+  // Header with a decorative background.
+  doc.setFillColor(0, 123, 255);
+  doc.rect(0, 0, pageWidth, 30, 'F');
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
-  doc.setTextColor(255, 255, 255); // white text in header
+  doc.setTextColor(255, 255, 255);
   doc.text("pH Test Report", pageWidth / 2, 20, { align: 'center' });
   
-  // Draw a decorative line below header.
+  // Draw a divider below header.
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.5);
   doc.line(margin, 33, pageWidth - margin, 33);
   
-  // *** Body Section ***
-  doc.setTextColor(0, 0, 0);
+  // Retrieve the result text.
+  const resultTextElem = document.getElementById("result-text");
+  if (!resultTextElem) {
+    console.error("Result text element not found.");
+    alert("Error: Result text element not found.");
+    return;
+  }
+  
+  const resultText = resultTextElem.innerText;
+  if (!resultText) {
+    console.warn("No result text found. The report might be empty.");
+    alert("Warning: There is no result available to download.");
+    return;
+  }
+  
+  // Split text into lines that fit within the page width.
+  const textLines = doc.splitTextToSize(resultText, pageWidth - 2 * margin);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
-  
-  // Get detailed result text from the page.
-  const resultText = document.getElementById("result-text").innerText;
-  // Split into lines that fit inside the page.
-  const textLines = doc.splitTextToSize(resultText, pageWidth - 2 * margin);
+  doc.setTextColor(0, 0, 0);
   doc.text(textLines, margin, 45);
-  
-  // *** Footer Section ***
-  // Draw a decorative border.
+
+  // Decorative border around the page.
   doc.setDrawColor(0, 123, 255);
   doc.setLineWidth(2);
-  doc.rect(5, 5, pageWidth - 10, pageHeight - 10); // draws a border around the page
+  doc.rect(5, 5, pageWidth - 10, doc.internal.pageSize.getHeight() - 10);
   
-  // Add footer text (e.g., tagline or disclaimer).
+  // Add a footer.
   doc.setFont("helvetica", "italic");
   doc.setFontSize(10);
   doc.setTextColor(100);
-  doc.text("Thank you for using our pH testing service", pageWidth / 2, pageHeight - 10, { align: 'center' });
+  doc.text("Thank you for using our pH testing service", 
+           pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
   
-  // Save the PDF with a descriptive filename.
+  console.log("PDF generation complete, saving file.");
+  // Save the generated PDF.
   doc.save("pH_Test_Results.pdf");
 }
 
