@@ -3,12 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>pH Test Website</title>
+    <title>pH Test Website (No ML Model)</title>
     <!-- Include jsPDF library for PDF downloads -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Include TensorFlow.js and Teachable Machine libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <style>
       body {
         font-family: 'Open Sans', Arial, sans-serif;
@@ -54,20 +51,12 @@
         transform: scale(1.1);
       }
       @keyframes fadeIn {
-        0% {
-          opacity: 0;
-        }
-        100% {
-          opacity: 1;
-        }
+        0% { opacity: 0; }
+        100% { opacity: 1; }
       }
       @keyframes slideIn {
-        0% {
-          transform: translateX(-100%);
-        }
-        100% {
-          transform: translateX(0);
-        }
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(0); }
       }
       .decorative-element {
         position: absolute;
@@ -77,22 +66,9 @@
         animation: float 4s ease-in-out infinite;
       }
       @keyframes float {
-        0% {
-          transform: translateY(0);
-        }
-        50% {
-          transform: translateY(-20px);
-        }
-        100% {
-          transform: translateY(0);
-        }
-      }
-      /* Model status indicator styling */
-      #model-status {
-        text-align: center;
-        font-weight: bold;
-        color: green;
-        margin: 20px auto;
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+        100% { transform: translateY(0); }
       }
     </style>
   </head>
@@ -102,7 +78,7 @@
     <div class="decorative-element" style="top: 20px; left: 20px; width: 100px; height: 100px;"></div>
     <div class="decorative-element" style="top: 50%; left: 80%; width: 150px; height: 150px;"></div>
     <div class="decorative-element" style="bottom: 10%; right: 10%; width: 200px; height: 200px;"></div>
-
+    
     <!-- Test Type Selection -->
     <label for="test-selection">Select a Test:</label>
     <select id="test-selection" onchange="showSubcategories()">
@@ -115,56 +91,28 @@
       <option value="soil">Soil</option>
       <option value="ph-testing">pH Testing</option>
     </select>
-
+    
     <!-- Subcategory Menu (dynamically populated) -->
     <div id="subcategory-menu">
       <label for="subcategory-selection">Select a Subcategory:</label>
       <select id="subcategory-selection"></select>
     </div>
-
+    
     <!-- pH Strip Upload -->
     <div id="ph-upload">
       <label for="file-upload">Upload pH Strip Image:</label>
       <input type="file" id="file-upload" accept="image/*" onchange="analyzeImage()" />
     </div>
-
+    
     <!-- Test Results Section -->
     <div id="results">
       <h2>Test Results</h2>
       <p id="result-text"></p>
       <button id="download-btn" onclick="downloadResults()">Download Results</button>
     </div>
-
-    <!-- Model Status -->
-    <div>
-      <h2>Teachable Machine Model Status</h2>
-      <div id="model-status">Loading model...</div>
-    </div>
-
+    
     <script>
-      /* --- Model Loading and File Upload Analysis --- */
-      let model;
-      // Since model files are in the root of your repository, URL is an empty string.
-      const URL = "";
-
-      async function init() {
-        try {
-          const modelURL = URL + "model.json";
-          const metadataURL = URL + "metadata.json";
-          console.log("Loading model from:", modelURL);
-          model = await tmImage.load(modelURL, metadataURL);
-          console.log("Teachable Machine model loaded successfully.");
-          document.getElementById("model-status").innerText = "Model loaded successfully!";
-        } catch (error) {
-          console.error("Error loading model:", error);
-          document.getElementById("model-status").innerText = "Error loading model!";
-        }
-      }
-
-      // Load the model on page load.
-      window.addEventListener("load", init);
-
-      /* --- pH Website Functions --- */
+      /* --- Functions for Subcategory Options --- */
       function showSubcategories() {
         var selection = document.getElementById("test-selection").value;
         var subcategoryMenu = document.getElementById("subcategory-menu");
@@ -225,7 +173,8 @@
         select.add(option);
       }
 
-      // pH mapping data.
+      /* --- pH Color Mapping & Image Processing Functions --- */
+      // Reference mapping: each object maps an average RGB to a pH value.
       const colorPHMap = [
         { r: 185, g: 92,  b: 96,  pH: 1 },
         { r: 192, g: 110, b: 121, pH: 2 },
@@ -243,33 +192,25 @@
         { r: 99,  g: 85,  b: 101, pH: 14 }
       ];
 
-      // Convert RGB to LAB.
+      // Convert from RGB to LAB; LAB is more perceptually uniform for color difference.
       function rgbToLab(r, g, b) {
-        let R = r / 255,
-          G = g / 255,
-          B = b / 255;
+        let R = r / 255, G = g / 255, B = b / 255;
         R = (R > 0.04045) ? Math.pow((R + 0.055) / 1.055, 2.4) : R / 12.92;
         G = (G > 0.04045) ? Math.pow((G + 0.055) / 1.055, 2.4) : G / 12.92;
         B = (B > 0.04045) ? Math.pow((B + 0.055) / 1.055, 2.4) : B / 12.92;
         let X = R * 0.4124 + G * 0.3576 + B * 0.1805;
         let Y = R * 0.2126 + G * 0.7152 + B * 0.0722;
         let Z = R * 0.0193 + G * 0.1192 + B * 0.9505;
-        X *= 100;
-        Y *= 100;
-        Z *= 100;
-        const Xn = 95.047,
-          Yn = 100.0,
-          Zn = 108.883;
-        function f(t) {
-          return t > 0.008856 ? Math.pow(t, 1 / 3) : 7.787 * t + 16 / 116;
-        }
-        let L = Y / Yn > 0.008856 ? 116 * Math.pow(Y / Yn, 1 / 3) - 16 : 903.3 * (Y / Yn);
-        let a = 500 * (f(X / Xn) - f(Y / Yn));
-        let bVal = 200 * (f(Y / Yn) - f(Z / Yn));
+        X *= 100; Y *= 100; Z *= 100;
+        const Xn = 95.047, Yn = 100.0, Zn = 108.883;
+        function f(t) { return t > 0.008856 ? Math.pow(t, 1/3) : (7.787 * t) + (16/116); }
+        let L = (Y/Yn > 0.008856) ? (116 * Math.pow(Y/Yn, 1/3))-16 : 903.3 * (Y/Yn);
+        let a = 500 * (f(X/Xn) - f(Y/Yn));
+        let bVal = 200 * (f(Y/Yn) - f(Z/Yn));
         return { L: L, a: a, b: bVal };
       }
 
-      // Match the image's average color to a pH value.
+      // Compare average LAB color with reference values and return the closest pH.
       function matchToPH(r, g, b) {
         const labColor = rgbToLab(r, g, b);
         let closestMatch = null;
@@ -278,8 +219,8 @@
           const refLab = rgbToLab(ref.r, ref.g, ref.b);
           const deltaE = Math.sqrt(
             Math.pow(labColor.L - refLab.L, 2) +
-              Math.pow(labColor.a - refLab.a, 2) +
-              Math.pow(labColor.b - refLab.b, 2)
+            Math.pow(labColor.a - refLab.a, 2) +
+            Math.pow(labColor.b - refLab.b, 2)
           );
           if (deltaE < minDeltaE) {
             minDeltaE = deltaE;
@@ -289,11 +230,9 @@
         return closestMatch || "Unknown";
       }
 
-      // Auto white balance correction using the Gray World Assumption.
+      // Auto white balance adjustment using the Gray World Assumption.
       function autoWhiteBalance(data) {
-        let sumR = 0,
-          sumG = 0,
-          sumB = 0;
+        let sumR = 0, sumG = 0, sumB = 0;
         const pixelCount = data.length / 4;
         for (let i = 0; i < data.length; i += 4) {
           sumR += data[i];
@@ -315,12 +254,8 @@
         return data;
       }
 
-      // Handle file upload, verify with the TM model, and process for pH estimation.
+      // Process the uploaded image: read it, perform auto white balance, compute the average color, and estimate the pH.
       async function analyzeImage() {
-        if (!model) {
-          alert("Model is not loaded yet! Please wait.");
-          return;
-        }
         const fileInput = document.getElementById("file-upload");
         const file = fileInput.files[0];
         if (!file) {
@@ -328,28 +263,12 @@
           return;
         }
         const reader = new FileReader();
-        reader.onloadend = async function () {
+        reader.onloadend = function () {
           const dataURL = reader.result;
           let img = new Image();
           img.src = dataURL;
-          img.onload = async () => {
-            // Use the TM model to predict on the uploaded image.
-            const predictions = await model.predict(img);
-            console.log("Predictions:", predictions);
-            let phStripDetected = false;
-            predictions.forEach(prediction => {
-              if (
-                prediction.className.toLowerCase() === "pH strip".toLowerCase() &&
-                prediction.probability > 0.8
-              ) {
-                phStripDetected = true;
-              }
-            });
-            if (!phStripDetected) {
-              alert("Uploaded image does not appear to be a valid pH strip. Please try again.");
-              return;
-            }
-            // Process the image for pH estimation.
+          img.onload = function () {
+            // Create a canvas and draw the image on it.
             const canvas = document.createElement("canvas");
             canvas.width = img.width;
             canvas.height = img.height;
@@ -358,9 +277,8 @@
             let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             imageData.data = autoWhiteBalance(imageData.data);
             ctx.putImageData(imageData, 0, 0);
-            let sumR = 0,
-              sumG = 0,
-              sumB = 0;
+            // Calculate average RGB.
+            let sumR = 0, sumG = 0, sumB = 0;
             const totalPixels = imageData.data.length / 4;
             for (let i = 0; i < imageData.data.length; i += 4) {
               sumR += imageData.data[i];
@@ -370,6 +288,7 @@
             let avgR = sumR / totalPixels;
             let avgG = sumG / totalPixels;
             let avgB = sumB / totalPixels;
+            // Estimate the pH value.
             let estimatedPH = matchToPH(avgR, avgG, avgB);
             document.getElementById("result-text").innerText = "Estimated pH: " + estimatedPH;
             document.getElementById("results").style.display = "block";
