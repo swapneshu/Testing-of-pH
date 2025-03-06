@@ -446,8 +446,22 @@ function downloadResults() {
     format: 'a4'
   });
   
+  // Get dimensions.
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
+
+  // *** Add a Watermark ***
+  // Set a semi-transparent, rotated text "CONFIDENTIAL" in the background.
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(50);
+  doc.setTextColor(200, 200, 200); // light gray
+  // The 'angle' option is not built-in to jsPDF 2.x, so use doc.text() with transformation.
+  doc.saveGraphicsState();
+  doc.translate(pageWidth / 2, pageHeight / 2);
+  doc.rotate(45);
+  doc.text("Temporary pH report*", 0, 0, { align: 'center' });
+  doc.restoreGraphicsState();
   
   // Header with a decorative background.
   doc.setFillColor(0, 123, 255);
