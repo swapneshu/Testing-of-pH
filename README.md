@@ -446,9 +446,7 @@ function downloadResults() {
     format: 'a4'
   });
   
-  // Get dimensions.
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
 
   // *** Add a Watermark ***
