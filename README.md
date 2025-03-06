@@ -1,26 +1,32 @@
-# Testing-of-pH
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>pH Test Website</title>
+    <!-- Include jsPDF library for PDF downloads -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Include TensorFlow.js and Teachable Machine libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <style>
-    body {
+      body {
         font-family: 'Open Sans', Arial, sans-serif;
         margin: 20px;
         background: linear-gradient(135deg, #e2e2e2, #c9c9c9);
         color: #333;
         transition: background-color 0.5s, color 0.5s;
-    }
-    h1 {
-        color: #4CAF50;
+      }
+      h1, h2 {
         text-align: center;
+      }
+      h1 {
+        color: #4caf50;
         animation: fadeIn 2s ease-in-out;
         font-weight: 700;
         text-shadow: 2px 2px #e2e2e2;
-    }
-    label, select, input {
+      }
+      label, select, input, button {
         display: block;
         margin: 20px auto;
         animation: slideIn 1s ease-in-out;
@@ -32,380 +38,368 @@
         border-radius: 10px;
         box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
         background-color: #fff;
-    }
-    select, input {
+      }
+      select, input {
         padding: 10px;
         border-radius: 5px;
         border: 1px solid #ccc;
-    }
-    #subcategory-menu, #ph-upload, #results {
+      }
+      #subcategory-menu,
+      #results,
+      #ph-upload {
         display: none;
-    }
-    #ph-image {
-        margin-top: 10px;
-        animation: scaleUp 1s ease-in-out;
-    }
-    #download-btn {
-        margin-top: 20px;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        padding: 15px 30px;
-        cursor: pointer;
-        border-radius: 5px;
-        transition: background-color 0.3s, transform 0.3s;
-        font-size: 1.1em;
-        width: 80%;
-        max-width: 300px;
-        text-align: center;
-        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    #download-btn:hover {
+      }
+      #download-btn:hover {
         background-color: #45a049;
         transform: scale(1.1);
-    }
-    @keyframes fadeIn {
+      }
+      @keyframes fadeIn {
         0% { opacity: 0; }
         100% { opacity: 1; }
-    }
-    @keyframes slideIn {
+      }
+      @keyframes slideIn {
         0% { transform: translateX(-100%); }
         100% { transform: translateX(0); }
-    }
-    @keyframes scaleUp {
-        0% { transform: scale(0); }
-        100% { transform: scale(1); }
-    }
-    .decorative-element {
+      }
+      .decorative-element {
         position: absolute;
         background: radial-gradient(circle at center, #fffc00, #ff0084);
         border-radius: 50%;
         opacity: 0.4;
         animation: float 4s ease-in-out infinite;
-    }
-    @keyframes float {
+      }
+      @keyframes float {
         0% { transform: translateY(0); }
         50% { transform: translateY(-20px); }
         100% { transform: translateY(0); }
-    }
-</style>
-
-
-
-</head>
-<body>
+      }
+      /* Style for model load status indicator */
+      #model-status {
+        text-align: center;
+        font-weight: bold;
+        color: green;
+        margin: 20px auto;
+      }
+    </style>
+  </head>
+  <body>
     <h1>Welcome to the pH Test Website</h1>
     <!-- Decorative Elements -->
     <div class="decorative-element" style="top: 20px; left: 20px; width: 100px; height: 100px;"></div>
     <div class="decorative-element" style="top: 50%; left: 80%; width: 150px; height: 150px;"></div>
     <div class="decorative-element" style="bottom: 10%; right: 10%; width: 200px; height: 200px;"></div>
 
-   <!-- Initial Menu -->
+    <!-- Test Type Selection -->
     <label for="test-selection">Select a Test:</label>
     <select id="test-selection" onchange="showSubcategories()">
-        <option value="">--Select--</option>
-        <option value="health">Health</option>
-        <option value="hygiene">Hygiene</option>
-        <option value="food">Food Items</option>
-        <option value="household">Household Utilities</option>
-        <option value="water">Water Quality</option>
-        <option value="soil">Soil</option>
-        <option value="ph-testing">pH Testing</option>
+      <option value="">--Select--</option>
+      <option value="health">Health</option>
+      <option value="hygiene">Hygiene</option>
+      <option value="food">Food Items</option>
+      <option value="household">Household Utilities</option>
+      <option value="water">Water Quality</option>
+      <option value="soil">Soil</option>
+      <option value="ph-testing">pH Testing</option>
     </select>
 
-    
-    <!-- Second Menu -->
+    <!-- Subcategory Menu (dynamically populated) -->
     <div id="subcategory-menu">
-        <label for="subcategory-selection">Select a Subcategory:</label>
-        <select id="subcategory-selection">
-            <!-- Options will be dynamically populated based on initial selection -->
-        </select>
+      <label for="subcategory-selection">Select a Subcategory:</label>
+      <select id="subcategory-selection"></select>
     </div>
-    <!-- pH Strip Upload -->
+
+    <!-- pH Strip Image Upload -->
     <div id="ph-upload">
-        <label for="file-upload">Upload pH Strip Image:</label>
-        <input type="file" id="file-upload" accept="image/*" onchange="analyzeImage()">
+      <label for="file-upload">Upload pH Strip Image:</label>
+      <input type="file" id="file-upload" accept="image/*" onchange="analyzeImage()" />
     </div>
-    
-    <!-- Results Section -->
+
+    <!-- Test Results Section -->
     <div id="results">
-        <h2>Test Results</h2>
-        <p id="result-text"></p>
-        <button id="download-btn" onclick="downloadResults()">Download Results</button>
+      <h2>Test Results</h2>
+      <p id="result-text"></p>
+      <button id="download-btn" onclick="downloadResults()">Download Results</button>
     </div>
+
+    <!-- Teachable Machine Model Section -->
+    <div>
+      <h2>Teachable Machine Image Model</h2>
+      <!-- Model load status indicator -->
+      <div id="model-status">Loading model...</div>
+      <div id="webcam-container"></div>
+      <div id="label-container"></div>
+    </div>
+
     <script>
-        function showSubcategories() {
-            var selection = document.getElementById('test-selection').value;
-            var subcategoryMenu = document.getElementById('subcategory-menu');
-            var subcategorySelection = document.getElementById('subcategory-selection');
-            
-            // Clear previous options
-            subcategorySelection.innerHTML = '';
+      /* -------------------------------------------------------
+         TEACHABLE MACHINE MODEL & WEBCAM SETUP
+         ------------------------------------------------------- */
+      // Global variables for the TM model, webcam, and its label container.
+      let model, webcam, labelContainer, maxPredictions;
+      // Update the URL to point to your model folder location:
+      const URL = "downloads/tm-my-image-model/"; // ensure this folder contains model.json, metadata.json, and weights
 
-            if (selection === 'health' || selection === 'hygiene' || selection === 'food' || selection === 'household' || selection === 'water' || selection === 'soil') {
-                subcategoryMenu.style.display = 'block';
-                document.getElementById('ph-upload').style.display = 'block';
-                addOptionsForSelection(selection, subcategorySelection);
-            } else if (selection === 'ph-testing') {
-                document.getElementById('ph-upload').style.display = 'block';
-                subcategoryMenu.style.display = 'none';
-            } else {
-                subcategoryMenu.style.display = 'none';
-                document.getElementById('ph-upload').style.display = 'none';
-            }
+      async function init() {
+        try {
+          const modelURL = URL + "model.json";
+          const metadataURL = URL + "metadata.json";
+          console.log("Loading model from:", modelURL);
+          model = await tmImage.load(modelURL, metadataURL);
+          maxPredictions = model.getTotalClasses();
+          console.log("Teachable Machine model loaded successfully.");
+          document.getElementById("model-status").innerText = "Model loaded successfully!";
+
+          // Setup the webcam (200x200, flipped)
+          const flip = true;
+          webcam = new tmImage.Webcam(200, 200, flip);
+          await webcam.setup();
+          await webcam.play();
+          window.requestAnimationFrame(loop);
+          // Append the webcam canvas to the container
+          document.getElementById("webcam-container").appendChild(webcam.canvas);
+          labelContainer = document.getElementById("label-container");
+          for (let i = 0; i < maxPredictions; i++) {
+            labelContainer.appendChild(document.createElement("div"));
+          }
+        } catch (error) {
+          console.error("Error loading model:", error);
+          document.getElementById("model-status").innerText = "Error loading model!";
         }
-        function addOptionsForSelection(selection, subcategorySelection) {
-            if (selection === 'health') {
-                addOption(subcategorySelection, 'Urine (Healthy)', 'urine');
-                addOption(subcategorySelection, 'Menstrual Blood', 'menstrual');
-            } else if (selection === 'hygiene') {
-                addOption(subcategorySelection, 'Shampoo', 'shampoo');
-                addOption(subcategorySelection, 'Soap', 'soap');
-                addOption(subcategorySelection, 'Skin Creams/Lotions', 'cream');
-                addOption(subcategorySelection, 'Face Wash', 'facewash');
-                addOption(subcategorySelection, 'Toothpaste', 'toothpaste');
-            } else if (selection === 'food') {
-                addOption(subcategorySelection, 'Food Items', 'food');
-                addOption(subcategorySelection, 'Curd Formation', 'curd');
-                addOption(subcategorySelection, 'Milk', 'milk');
-                addOption(subcategorySelection, 'Wine', 'wine');
-            } else if (selection === 'household') {
-                addOption(subcategorySelection, 'Detergents', 'detergents');
-                addOption(subcategorySelection, 'Aquarium Water', 'aquarium');
-            } else if (selection === 'water') {
-                addOption(subcategorySelection, 'Water (Drinkable)', 'drinkable');
-                addOption(subcategorySelection, 'Swimming Pool', 'swimmingpool');
-            } else if (selection === 'soil') {
-                addOption(subcategorySelection, 'Soil', 'soil');
-                addOption(subcategorySelection, 'Rice Soil', 'ricesoil');
-                addOption(subcategorySelection, 'Wheat Soil', 'wheatsoil');
-            }
+      }
+
+      async function loop() {
+        webcam.update();
+        await predict();
+        window.requestAnimationFrame(loop);
+      }
+
+      async function predict() {
+        const prediction = await model.predict(webcam.canvas);
+        for (let i = 0; i < maxPredictions; i++) {
+          const classPrediction = prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+          labelContainer.childNodes[i].innerHTML = classPrediction;
         }
+      }
 
-        function addOption(select, text, value) {
-            var option = document.createElement('option');
-            option.text = text;
-            option.value = value;
-            select.add(option);
+      // Auto-load the TM model when the page loads.
+      window.addEventListener("load", init);
+
+      /* -------------------------------------------------------
+         pH WEBSITE FUNCTIONS: SUBCATEGORIES, IMAGE UPLOAD & pH ESTIMATION
+         ------------------------------------------------------- */
+      function showSubcategories() {
+        var selection = document.getElementById("test-selection").value;
+        var subcategoryMenu = document.getElementById("subcategory-menu");
+        var subcategorySelection = document.getElementById("subcategory-selection");
+        subcategorySelection.innerHTML = "";
+        if (
+          selection === "health" ||
+          selection === "hygiene" ||
+          selection === "food" ||
+          selection === "household" ||
+          selection === "water" ||
+          selection === "soil"
+        ) {
+          subcategoryMenu.style.display = "block";
+          document.getElementById("ph-upload").style.display = "block";
+          addOptionsForSelection(selection, subcategorySelection);
+        } else if (selection === "ph-testing") {
+          document.getElementById("ph-upload").style.display = "block";
+          subcategoryMenu.style.display = "none";
+        } else {
+          subcategoryMenu.style.display = "none";
+          document.getElementById("ph-upload").style.display = "none";
         }
-        function detectPH(imageData) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.src = imageData;
+      }
 
-                img.onload = () => {
-                    // Draw image on canvas for analysis
-                    const canvas = document.createElement("canvas");
-                    const ctx = canvas.getContext("2d");
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
+      function addOptionsForSelection(selection, subcategorySelection) {
+        if (selection === "health") {
+          addOption(subcategorySelection, "Urine (Healthy)", "urine");
+          addOption(subcategorySelection, "Menstrual Blood", "menstrual");
+        } else if (selection === "hygiene") {
+          addOption(subcategorySelection, "Shampoo", "shampoo");
+          addOption(subcategorySelection, "Soap", "soap");
+          addOption(subcategorySelection, "Skin Creams/Lotions", "cream");
+          addOption(subcategorySelection, "Face Wash", "facewash");
+          addOption(subcategorySelection, "Toothpaste", "toothpaste");
+        } else if (selection === "food") {
+          addOption(subcategorySelection, "Food Items", "food");
+          addOption(subcategorySelection, "Curd Formation", "curd");
+          addOption(subcategorySelection, "Milk", "milk");
+          addOption(subcategorySelection, "Wine", "wine");
+        } else if (selection === "household") {
+          addOption(subcategorySelection, "Detergents", "detergents");
+          addOption(subcategorySelection, "Aquarium Water", "aquarium");
+        } else if (selection === "water") {
+          addOption(subcategorySelection, "Water (Drinkable)", "drinkable");
+          addOption(subcategorySelection, "Swimming Pool", "swimmingpool");
+        } else if (selection === "soil") {
+          addOption(subcategorySelection, "Soil", "soil");
+          addOption(subcategorySelection, "Rice Soil", "ricesoil");
+          addOption(subcategorySelection, "Wheat Soil", "wheatsoil");
+        }
+      }
 
-                    // Get image data (pixels)
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const { data } = imageData;
+      function addOption(select, text, value) {
+        var option = document.createElement("option");
+        option.text = text;
+        option.value = value;
+        select.add(option);
+      }
 
-                    // Calculate average color of the image
-                    let r = 0, g = 0, b = 0;
-                    for (let i = 0; i < data.length; i += 4) {
-                        r += data[i];     // Red
-                        g += data[i + 1]; // Green
-                        b += data[i + 2]; // Blue
-                    }
-                    const pixelCount = data.length / 4;
-                    r = Math.floor(r / pixelCount);
-                    g = Math.floor(g / pixelCount);
-                    b = Math.floor(b / pixelCount);
+      // Reference mapping between average RGB values and pH values.
+      const colorPHMap = [
+        { r: 185, g: 92,  b: 96,  pH: 1 },
+        { r: 192, g: 110, b: 121, pH: 2 },
+        { r: 190, g: 132, b: 153, pH: 3 },
+        { r: 180, g: 140, b: 168, pH: 4 },
+        { r: 176, g: 145, b: 173, pH: 5 },
+        { r: 172, g: 147, b: 177, pH: 6 },
+        { r: 168, g: 149, b: 180, pH: 7 },
+        { r: 165, g: 146, b: 181, pH: 8 },
+        { r: 167, g: 148, b: 182, pH: 9 },
+        { r: 162, g: 146, b: 180, pH: 10 },
+        { r: 153, g: 151, b: 177, pH: 11 },
+        { r: 164, g: 155, b: 169, pH: 12 },
+        { r: 145, g: 106, b: 129, pH: 13 },
+        { r: 99,  g: 85,  b: 101, pH: 14 }
+      ];
 
-                    // Match average color to pH scale
-                    const detectedPH = matchToPH(r, g, b);
-                    resolve(detectedPH);
-                };
+      // Conversion from RGB to LAB.
+      function rgbToLab(r, g, b) {
+        let R = r / 255, G = g / 255, B = b / 255;
+        R = (R > 0.04045) ? Math.pow((R + 0.055) / 1.055, 2.4) : R / 12.92;
+        G = (G > 0.04045) ? Math.pow((G + 0.055) / 1.055, 2.4) : G / 12.92;
+        B = (B > 0.04045) ? Math.pow((B + 0.055) / 1.055, 2.4) : B / 12.92;
+        let X = R * 0.4124 + G * 0.3576 + B * 0.1805;
+        let Y = R * 0.2126 + G * 0.7152 + B * 0.0722;
+        let Z = R * 0.0193 + G * 0.1192 + B * 0.9505;
+        X *= 100;
+        Y *= 100;
+        Z *= 100;
+        const Xn = 95.047, Yn = 100.0, Zn = 108.883;
+        function f(t) { return t > 0.008856 ? Math.pow(t, 1/3) : 7.787 * t + 16/116; }
+        let L = Y/Yn > 0.008856 ? 116 * Math.pow(Y/Yn, 1/3) - 16 : 903.3 * Y/Yn;
+        let a = 500 * (f(X/Xn) - f(Y/Yn));
+        let bVal = 200 * (f(Y/Yn) - f(Z/Yn));
+        return { L: L, a: a, b: bVal };
+      }
+
+      // Given average RGB from image, find the closest matching pH value.
+      function matchToPH(r, g, b) {
+        const labColor = rgbToLab(r, g, b);
+        let closestMatch = null;
+        let minDeltaE = Infinity;
+        colorPHMap.forEach(ref => {
+          const refLab = rgbToLab(ref.r, ref.g, ref.b);
+          const deltaE = Math.sqrt(
+            (labColor.L - refLab.L) ** 2 +
+            (labColor.a - refLab.a) ** 2 +
+            (labColor.b - refLab.b) ** 2
+          );
+          if (deltaE < minDeltaE) {
+            minDeltaE = deltaE;
+            closestMatch = ref.pH;
+          }
+        });
+        return closestMatch || "Unknown";
+      }
+
+      // Auto white balance correction using the Gray World Assumption.
+      function autoWhiteBalance(data) {
+        let sumR = 0, sumG = 0, sumB = 0;
+        const pixelCount = data.length / 4;
+        for (let i = 0; i < data.length; i += 4) {
+          sumR += data[i];
+          sumG += data[i + 1];
+          sumB += data[i + 2];
+        }
+        const avgR = sumR / pixelCount;
+        const avgG = sumG / pixelCount;
+        const avgB = sumB / pixelCount;
+        const avgGray = (avgR + avgG + avgB) / 3;
+        const scaleR = avgGray / avgR;
+        const scaleG = avgGray / avgG;
+        const scaleB = avgGray / avgB;
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = Math.min(data[i] * scaleR, 255);
+          data[i + 1] = Math.min(data[i + 1] * scaleG, 255);
+          data[i + 2] = Math.min(data[i + 2] * scaleB, 255);
+        }
+        return data;
+      }
+
+      // Handle file upload, use the TM model for image verification,
+      // then process and compute the estimated pH.
+      async function analyzeImage() {
+        if (!model) {
+          alert("Model is not loaded yet! Please wait until the model loads.");
+          return;
+        }
+        const fileInput = document.getElementById("file-upload");
+        const file = fileInput.files[0];
+        if (!file) {
+          alert("Please upload an image first!");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = async function () {
+          const dataURL = reader.result;
+          let img = new Image();
+          img.src = dataURL;
+          img.onload = async () => {
+            // Use the TM model to predict on the uploaded image.
+            const predictions = await model.predict(img);
+            console.log("Predictions:", predictions);
+            let phStripDetected = false;
+            predictions.forEach(prediction => {
+              // Adjust class name and threshold if necessary.
+              if (prediction.className.toLowerCase() === "pH strip".toLowerCase() &&
+                  prediction.probability > 0.8) {
+                phStripDetected = true;
+              }
             });
-        }
-        function matchToPH(r, g, b) {
-            const colorPHMap = [
-                { r: 255, g: 0, b: 0, pH: 1 },    // Red for pH 1
-                { r: 255, g: 69, b: 0, pH: 2 },   // Red-Orange for pH 2
-                { r: 255, g: 165, b: 0, pH: 3 },  // Orange for pH 3
-                { r: 255, g: 215, b: 0, pH: 4 },  // Yellow-Orange for pH 4
-                { r: 255, g: 255, b: 0, pH: 5 },  // Yellow for pH 5
-                { r: 173, g: 255, b: 47, pH: 6 }, // Yellow-Green for pH 6
-                { r: 0, g: 128, b: 0, pH: 7 },    // Green for pH 7
-                { r: 0, g: 255, b: 127, pH: 8 },  // Green-Blue for pH 8
-                { r: 0, g: 0, b: 255, pH: 9 },    // Blue for pH 9
-                { r: 75, g: 0, b: 130, pH: 10 },  // Indigo for pH 10
-                { r: 238, g: 130, b: 238, pH: 11 } // Violet for pH 11
-            ];
-
-            // Find the closest match to the average color
-            let closestMatch = null;
-            let minDistance = Infinity;
-                        colorPHMap.forEach(({ r: cr, g: cg, b: cb, pH }) => {
-                const distance = Math.sqrt((r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestMatch = pH;
-                }
-            });
-
-            return closestMatch || "Unknown";
-        }
-
-        async function analyzeImage() {
-            const upload = document.getElementById('file-upload');
-            if (!upload.files.length) {
-                alert('Please upload an image first.');
-                return;
+            if (!phStripDetected) {
+              alert("Uploaded image does not appear to be a valid pH strip. Please try again.");
+              return;
             }
-
-            const img = upload.files[0];
-            const fileReader = new FileReader();
-            fileReader.onload = async () => {
-                const detectedPH = await detectPH(fileReader.result);
-                displayResults(detectedPH);
-            };
-            fileReader.readAsDataURL(img);
-        }
-        function displayResults(detectedPH) {
-            document.getElementById('results').style.display = 'block';
-            document.getElementById('result-text').innerText = 'pH Level: ' + detectedPH;
-
-            // Customize result interpretation based on test type
-            var testType = document.getElementById('test-selection').value;
-            var subCategory = document.getElementById('subcategory-selection').value;
-
-            if (testType === 'health') {
-                if (subCategory === 'urine') {
-                    if (detectedPH < 4.5 || detectedPH > 8) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Indicates urinary tract infections, kidney issues, dehydration.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Healthy pH Level.';
-                    }
-                } else if (subCategory === 'menstrual') {
-                    if (detectedPH > 4.5) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Indicates bacterial infections like bacterial vaginosis.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Healthy pH Level.';
-                    }
-                }
-            } else if (testType === 'hygiene') {
-                if (subCategory === 'shampoo') {
-                    if (detectedPH > 6 || detectedPH < 4) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Can cause scalp irritation, dryness, or hair damage.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level.';
-                    }
-                } else if (subCategory === 'soap') {
-                    if (detectedPH > 10) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Can cause excessive dryness, skin irritation.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level.';
-                    }
-                } else if (subCategory === 'cream') {
-                    if (detectedPH > 6) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Can disturb the skin barrier, leading to acne or rashes.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level for skin creams/lotions.';
-                    }
-                } else if (subCategory === 'facewash') {
-                    if (detectedPH > 6) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Disrupts skin barrier, increases sensitivity.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level for face wash.';
-                    }
-                } else if (subCategory === 'toothpaste') {
-                    if (detectedPH < 6.5 || detectedPH > 7.5) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Acidic toothpaste erodes enamel or causes oral irritation.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level for toothpaste.';
-                    }
-                }
-            } else if (testType === 'food') {
-                if (subCategory === 'food') {
-                    if (detectedPH < 4 || detectedPH > 7) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Highly acidic foods cause dental erosion or indicate spoilage.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Normal pH Level.';
-                    }
-                } else if (subCategory === 'curd') {
-                    if (detectedPH > 4.6) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Indicates incomplete fermentation or spoilage.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level for curd formation.';
-                    }
-                } else if (subCategory === 'milk') {
-                    if (detectedPH < 6.4 || detectedPH > 6.8) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Indicates spoilage or bacterial contamination.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level for milk.';
-                    }
-                } else if (subCategory === 'wine') {
-                    if (detectedPH < 3 || detectedPH > 4) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Risk of microbial spoilage or overly tart taste.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level for wine.';
-                    }
-                }
-            } else if (testType === 'household') {
-                if (subCategory === 'detergents') {
-                    if (detectedPH > 12) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Can harm skin, damages delicate clothing.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level.';
-                    }
-                } else if (subCategory === 'aquarium') {
-                    if (detectedPH < 6.5 || detectedPH > 8.5) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Stresses fish, harms gills, or promotes algae overgrowth.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level.';
-                    }
-                }
-            } else if (testType === 'water') {
-                if (subCategory === 'drinkable') {
-                    if (detectedPH < 6.5 || detectedPH > 8) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Water is corrosive, unsafe, or has a bitter taste and scale buildup.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Safe drinking water pH Level.';
-                    }
-                } else if (subCategory === 'swimmingpool') {
-                    if (detectedPH < 7.2 || detectedPH > 7.8) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Can irritate skin and eyes, cause cloudy water or skin irritation.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level for swimming pool.';
-                    }
-                }
-            } else if (testType === 'soil') {
-                if (subCategory === 'soil') {
-                    if (detectedPH < 5.5 || detectedPH > 7) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Too acidic or too alkaline, limits growth of certain plants.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level for general soil.';
-                    }
-                } else if (subCategory === 'ricesoil') {
-                    if (detectedPH < 5.5 || detectedPH > 6.5) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Acidic soil stunts growth or alkaline soil affects yield.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level for rice soil.';
-                    }
-                                } else if (subCategory === 'wheatsoil') {
-                    if (detectedPH < 6 || detectedPH > 7.5) {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Abnormal pH. Limits nutrient uptake or reduces nitrogen efficiency.';
-                    } else {
-                        document.getElementById('result-text').innerText += '\nResult Interpretation: Ideal pH Level for wheat soil.';
-                    }
-                }
+            // Image processing: draw to canvas, white balance, then calculate average color.
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            imageData.data = autoWhiteBalance(imageData.data);
+            ctx.putImageData(imageData, 0, 0);
+            let sumR = 0, sumG = 0, sumB = 0;
+            const totalPixels = imageData.data.length / 4;
+            for (let i = 0; i < imageData.data.length; i += 4) {
+              sumR += imageData.data[i];
+              sumG += imageData.data[i + 1];
+              sumB += imageData.data[i + 2];
             }
-        }
-        
-        function downloadResults() {
-            var resultText = document.getElementById('result-text').innerText;
-            var blob = new Blob([resultText], { type: 'text/plain' });
-            var link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'test-results.txt';
-            link.click();
-        }
+            let avgR = sumR / totalPixels;
+            let avgG = sumG / totalPixels;
+            let avgB = sumB / totalPixels;
+            let estimatedPH = matchToPH(avgR, avgG, avgB);
+            document.getElementById("result-text").innerText = "Estimated pH: " + estimatedPH;
+            document.getElementById("results").style.display = "block";
+          };
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // Generate a PDF of the test results using jsPDF.
+      function downloadResults() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const resultText = document.getElementById("result-text").innerText;
+        doc.text("pH Test Results", 10, 10);
+        doc.text(resultText, 10, 20);
+        doc.save("pH_Test_Results.pdf");
+      }
     </script>
-</body>
+  </body>
 </html>
+
