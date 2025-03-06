@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pH Test Website (No ML Model)</title>
+  <title>pH Test Website (No ML Model with Advice)</title>
   <!-- Include jsPDF library for PDF downloads -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
@@ -33,7 +33,7 @@
       text-align: center;
       padding: 10px;
       border-radius: 10px;
-      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       background-color: #fff;
     }
     select, input {
@@ -87,7 +87,7 @@
     <option value="household">Household Utilities</option>
     <option value="water">Water Quality</option>
     <option value="soil">Soil</option>
-    <option value="ph-testing">pH Testing</option>
+    <option value="ph-testing">pH Testing (Generic)</option>
   </select>
   
   <!-- Subcategory Menu (dynamically populated) -->
@@ -155,7 +155,7 @@
         addOption(subcategorySelection, "Detergents", "detergents");
         addOption(subcategorySelection, "Aquarium Water", "aquarium");
       } else if (selection === "water") {
-        addOption(subcategorySelection, "Water (Drinkable)", "drinkable");
+        addOption(subcategorySelection, "Drinking Water", "drinkable");
         addOption(subcategorySelection, "Swimming Pool", "swimmingpool");
       } else if (selection === "soil") {
         addOption(subcategorySelection, "Soil", "soil");
@@ -169,6 +169,137 @@
       option.text = text;
       option.value = value;
       select.add(option);
+    }
+
+    /* --- Reference Ranges & Detailed Advice --- */
+    const referenceRanges = {
+      "urine": {
+        min: 4.5,
+        max: 8.0,
+        normal: "Urine pH is within the normal range. No immediate concerns.",
+        abnormal: "Urine pH is abnormal. It is advised that you consult a doctor for further evaluation."
+      },
+      "menstrual": {
+        min: 6.0,
+        max: 7.0,
+        normal: "Menstrual blood pH is within the expected range.",
+        abnormal: "Menstrual blood pH is abnormal. Please consult a healthcare provider."
+      },
+      "shampoo": {
+        min: 4.5,
+        max: 7.5,
+        normal: "Shampoo pH is within the typical range.",
+        abnormal: "Shampoo pH is abnormal. Consider testing another product or contacting the manufacturer."
+      },
+      "soap": {
+        min: 9.0,
+        max: 11.0,
+        normal: "Soap pH is as expected.",
+        abnormal: "Soap pH is abnormal. This may affect skin health; consider using an alternative."
+      },
+      "cream": {
+        min: 5.0,
+        max: 7.5,
+        normal: "Skin creams/lotions pH is normal.",
+        abnormal: "Skin creams/lotions pH is abnormal. If irritation occurs, consult a dermatologist."
+      },
+      "facewash": {
+        min: 5.0,
+        max: 7.5,
+        normal: "Face wash pH is within the normal range.",
+        abnormal: "Face wash pH is abnormal. Consider switching products."
+      },
+      "toothpaste": {
+        min: 6.5,
+        max: 8.5,
+        normal: "Toothpaste pH is normal.",
+        abnormal: "Toothpaste pH is abnormal. If experiencing sensitivity, consult your dentist."
+      },
+      "food": {
+        min: 3.0,
+        max: 4.5,
+        normal: "Food items pH is within the expected acidic range.",
+        abnormal: "Food items pH is abnormal. Do not consume the product and consider contacting the vendor."
+      },
+      "curd": {
+        min: 4.0,
+        max: 4.5,
+        normal: "Curd pH is within expected range.",
+        abnormal: "Curd pH is abnormal. Discard the product immediately."
+      },
+      "milk": {
+        min: 6.7,
+        max: 6.9,
+        normal: "Milk pH is normal.",
+        abnormal: "Milk pH is abnormal. Avoid consuming and consider returning the product."
+      },
+      "wine": {
+        min: 3.0,
+        max: 3.8,
+        normal: "Wine pH is within the expected range.",
+        abnormal: "Wine pH is abnormal. Discard the product and consider quality control measures."
+      },
+      "detergents": {
+        min: 10.0,
+        max: 12.0,
+        normal: "Detergents pH is typical for cleaning agents.",
+        abnormal: "Detergents pH is abnormal. Review product quality or consult the manufacturer."
+      },
+      "aquarium": {
+        min: 6.5,
+        max: 8.0,
+        normal: "Aquarium water pH is normal.",
+        abnormal: "Aquarium water pH is abnormal. Adjust with a pH increaser or decreaser as per guidelines."
+      },
+      "drinkable": {
+        min: 6.5,
+        max: 8.5,
+        normal: "Drinking water pH is within the acceptable range.",
+        abnormal: "Drinking water pH is abnormal. If highly acidic or alkaline, consider treating with a pH neutralizer or discarding the water and using an alternative source."
+      },
+      "swimmingpool": {
+        min: 7.2,
+        max: 7.8,
+        normal: "Swimming pool water pH is ideal.",
+        abnormal: "Swimming pool water pH is abnormal. Adjust chemicals carefully (typically by adding specific doses of pH increaser or decreaser) according to manufacturer guidelines."
+      },
+      "soil": {
+        min: 5.5,
+        max: 7.5,
+        normal: "Soil pH is within the normal range.",
+        abnormal: "Soil pH is abnormal. If the soil is too acidic, you might add garden lime (about 50–100 grams per square meter). If it is too alkaline, consider applying elemental sulfur. Consult your local agricultural extension service for precise recommendations."
+      },
+      "ricesoil": {
+        min: 5.0,
+        max: 7.0,
+        normal: "Rice soil pH is within the typical range.",
+        abnormal: "Rice soil pH is abnormal. Amend the soil as per local agronomic guidelines; consult an agronomist for accurate dosing."
+      },
+      "wheatsoil": {
+        min: 6.0,
+        max: 7.5,
+        normal: "Wheat soil pH is ideal.",
+        abnormal: "Wheat soil pH is abnormal. Adjust with lime or sulfur as recommended by local agricultural advisories."
+      }
+    };
+
+    // Function to generate interpretation/advice based on the test selection and estimated pH.
+    function getInterpretation(testSelection, estimatedPH) {
+      if (testSelection === "ph-testing") {
+        return "This is a generic pH test result. If the pH appears abnormal, consider further testing.";
+      }
+      var subSelect = document.getElementById("subcategory-selection");
+      var subcategory = subSelect ? subSelect.value : "";
+      if (!subcategory) return "No specific subcategory selected. Please choose one for detailed interpretation.";
+      let range = referenceRanges[subcategory];
+      if (range) {
+        if (estimatedPH < range.min || estimatedPH > range.max) {
+          return range.abnormal;
+        } else {
+          return range.normal;
+        }
+      }
+      return "No interpretation available for the selected test.";
     }
 
     /* --- pH Color Mapping & Image Processing Functions --- */
@@ -189,7 +320,6 @@
       { r: 99,  g: 85,  b: 101, pH: 14 }
     ];
 
-    // Convert RGB to LAB using standard formulas.
     function rgbToLab(r, g, b) {
       let R = r / 255, G = g / 255, B = b / 255;
       R = (R > 0.04045) ? Math.pow((R + 0.055) / 1.055, 2.4) : R / 12.92;
@@ -207,7 +337,6 @@
       return { L: L, a: a, b: bVal };
     }
 
-    // Compare the image's LAB color with reference values to estimate pH.
     function matchToPH(r, g, b) {
       const labColor = rgbToLab(r, g, b);
       let closestMatch = null;
@@ -227,14 +356,13 @@
       return closestMatch || "Unknown";
     }
 
-    // Auto white balance correction using the Gray World Assumption.
     function autoWhiteBalance(data) {
       let sumR = 0, sumG = 0, sumB = 0;
       const pixelCount = data.length / 4;
       for (let i = 0; i < data.length; i += 4) {
         sumR += data[i];
-        sumG += data[i + 1];
-        sumB += data[i + 2];
+        sumG += data[i+1];
+        sumB += data[i+2];
       }
       const avgR = sumR / pixelCount;
       const avgG = sumG / pixelCount;
@@ -245,13 +373,12 @@
       const scaleB = avgGray / avgB;
       for (let i = 0; i < data.length; i += 4) {
         data[i] = Math.min(data[i] * scaleR, 255);
-        data[i + 1] = Math.min(data[i + 1] * scaleG, 255);
-        data[i + 2] = Math.min(data[i + 2] * scaleB, 255);
+        data[i+1] = Math.min(data[i+1] * scaleG, 255);
+        data[i+2] = Math.min(data[i+2] * scaleB, 255);
       }
       return data;
     }
 
-    // Handle the image upload, analyze it, and display detailed results.
     async function analyzeImage() {
       const fileInput = document.getElementById("file-upload");
       const file = fileInput.files[0];
@@ -265,7 +392,6 @@
         let img = new Image();
         img.src = dataURL;
         img.onload = function () {
-          // Create a canvas to draw the image.
           const canvas = document.createElement("canvas");
           canvas.width = img.width;
           canvas.height = img.height;
@@ -274,44 +400,77 @@
           let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           imageData.data = autoWhiteBalance(imageData.data);
           ctx.putImageData(imageData, 0, 0);
-          // Calculate average RGB.
           let sumR = 0, sumG = 0, sumB = 0;
           const totalPixels = imageData.data.length / 4;
           for (let i = 0; i < imageData.data.length; i += 4) {
             sumR += imageData.data[i];
-            sumG += imageData.data[i + 1];
-            sumB += imageData.data[i + 2];
+            sumG += imageData.data[i+1];
+            sumB += imageData.data[i+2];
           }
           let avgR = sumR / totalPixels;
           let avgG = sumG / totalPixels;
           let avgB = sumB / totalPixels;
-          // Convert the averaged RGB values to LAB.
           let labValue = rgbToLab(avgR, avgG, avgB);
-          // Estimate the pH using the reference table.
           let estimatedPH = matchToPH(avgR, avgG, avgB);
-          // Compose a detailed results string.
-          let resultString = "Estimated pH: " + estimatedPH;
-          let detailedResultString = "Detailed Results:\n" +
+          let testSelection = document.getElementById("test-selection").value;
+          let interpretation = getInterpretation(testSelection, estimatedPH);
+          let resultString = "Detailed Results:\n" +
             "Average RGB: (" + avgR.toFixed(2) + ", " + avgG.toFixed(2) + ", " + avgB.toFixed(2) + ")\n" +
             "Converted LAB: (L: " + labValue.L.toFixed(2) + ", a: " + labValue.a.toFixed(2) + ", b: " + labValue.b.toFixed(2) + ")\n" +
-            "Estimated pH: " + estimatedPH;
-          // Display the detailed results.
-          document.getElementById("result-text").innerText = resultString + "\n\n" + detailedResultString;
+            "Estimated pH: " + estimatedPH + "\n\n" +
+            "Interpretation & Advice: " + interpretation + "\n\n" +
+            "Disclaimer: This information is for guidance only and does not replace professional advice.";
+          document.getElementById("result-text").innerText = resultString;
           document.getElementById("results").style.display = "block";
         };
       };
       reader.readAsDataURL(file);
     }
 
-    // Generate a PDF containing the test results using jsPDF.
     function downloadResults() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const resultText = document.getElementById("result-text").innerText;
-      doc.text("pH Test Results", 10, 10);
-      doc.text(resultText, 10, 20);
-      doc.save("pH_Test_Results.pdf");
-    }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // Define page width and margins
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 15;
+
+  // --- Header Section ---
+  // Draw a filled rectangle for the header background.
+  doc.setFillColor(0, 123, 255); // Choose a blue (RGB: 0,123,255) for the header.
+  doc.rect(0, 0, pageWidth, 30, 'F');
+  
+  // Header title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(255, 255, 255); // white text for header
+  doc.text("pH Test Report", pageWidth / 2, 20, { align: 'center' });
+  
+  // --- Divider ---
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.5);
+  doc.line(margin, 35, pageWidth - margin, 35);
+  
+  // --- Body Section ---
+  // Reset font and color for the content
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+
+  // Get the detailed result text from the page and split it into lines that fit the page.
+  const resultText = document.getElementById("result-text").innerText;
+  const textLines = doc.splitTextToSize(resultText, pageWidth - 2 * margin);
+  doc.text(textLines, margin, 45);
+  
+  // --- Footer Section ---
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text("Disclaimer: This report does not replace professional advice.", pageWidth / 2, 285, { align: 'center' });
+  
+  // Save the PDF with a descriptive filename.
+  doc.save("pH_Test_Results.pdf");
+}
+
   </script>
 </body>
 </html>
